@@ -4,6 +4,7 @@ Created on Mon Sep 30 22:22:31 2024
 
 @author: davi.hulse
 """
+#%% [1] Import
 
 import pandas as pd
 import numpy as np
@@ -15,20 +16,20 @@ from scipy import stats
 from scipy.stats import gaussian_kde
 from matplotlib.gridspec import GridSpec
 
-#%%
+#%% [2] Abrir CSV
 
 df = pd.read_csv('df_investidor10 - final.csv', na_values='-')
 
 df = df.replace("-%", np.nan)
 
-#%%
+#%% [3] Dados atuais
 #DF Atual
 
 df = df[df['Ano'] == 'Atual']
 
 print(df)
 
-#%%Renomear Colunas
+#%% [4] Renomear Colunas
 mapa_colunas = {
     'PAPEL': 'Papel',
     'Ano': 'Ano',
@@ -83,7 +84,7 @@ df = df.rename(columns=mapa_colunas)
 
 print(df.columns)
 
-#%%Transformando strings e percentuais em números
+#%% [5] Transformando strings e percentuais em números
 
 df.columns
 
@@ -125,7 +126,7 @@ for colp in col_percentuais:
         .astype(float)
         / 100)
 
-#%% Criando colunas em milhões
+#%% [6] Criando colunas em milhões
 colunas_milhoes = ['LiqMedDia', 'TotPapeis']
 for col in colunas_milhoes:
     if col in df.columns:
@@ -156,7 +157,7 @@ df_bilhoes = df[colunas_pares]
 df.drop(colunas_bilhoes, axis=1, inplace=True)
 
 
-#%%[Incluindo Setores]
+#%% [7] Incluindo Setores
 
 setores = pd.read_excel("ClassifSetor.xlsx", sheet_name=0)
 setores = setores.ffill()
@@ -184,18 +185,18 @@ mapa_setores = {
 
 df = df.rename(columns=mapa_setores)
 
-#%% Conferência
+#%% [8] Conferência
 
 df['SEGMENTO DE NEGOCIAÇÃO'].unique()
 
 #df = df[df['SEGMENTO DE NEGOCIAÇÃO'] == 'Novo Mercado']
 
 
-#%% Verificando colunas com nulos
+#%% [9] Verificando colunas com nulos
 
 df.isnull().sum()
 
-#%% Dropando colunas específicas com nulos
+#%% [10] Dropando colunas específicas com nulos
 
 #Qualquer valor nulo
 #colunas_muitos_nulos = df.columns[df.isnull().any()].tolist()
@@ -206,16 +207,15 @@ colunas_muitos_nulos = df.columns[df.isnull().sum() > 9].tolist()
 print("Colunas com muitos nulos = ", colunas_muitos_nulos)
 df.drop(colunas_muitos_nulos, axis=1, inplace=True)
 
-#%%
+#%% [11] Criação de variáveis de setor com médias
 
-# Criação de variáveis de setor com médias
 df['MargLiqSetor'] = df.groupby('Setor')['MargLiq'].transform('mean')
 df['MargBrutSetor'] = df.groupby('Setor')['MargBrut'].transform('mean')
 df['MargEBITSetor'] = df.groupby('Setor')['MargEBIT'].transform('mean')
 df['MargEBITDASetor'] = df.groupby('Setor')['MargEBITDA'].transform('mean')
 
 
-#%% Drop colunas
+#%% [12] Drop colunas
 
 #Verificar quantidade de nulos
 df.isnull().sum()
@@ -254,7 +254,8 @@ df.rename(columns={'SetorCVM': 'Setor'}, inplace=True)
 df.rename(columns={'SubsetorCVM': 'Subsetor'}, inplace=True)
 df.rename(columns={'SegmentoCVM': 'Segmento'}, inplace=True)
 
-#%%
+#%% [13] Drop NA
+
 df.columns
 
 #df_na = df.dropna()
@@ -263,7 +264,7 @@ df = df.dropna()
 
 print(df.head())
 
-#%% Remover setores com menos de 3 papeis:
+#%% [14] Remover setores com menos de 3 papeis:
 
 setores_validos = df.groupby('Setor')['Papel'].nunique()
 setores_validos = setores_validos[setores_validos > 2].index  # setores com mais de 2 papéis
@@ -272,14 +273,14 @@ setores_validos = setores_validos[setores_validos > 2].index  # setores com mais
 df = df[df['Setor'].isin(setores_validos)]
 
 
-#%% Tabela frequência por Setor
+#%% [15] Tabela frequência por Setor
 
 freq_empresas_setor = df[['Papel', 'Setor']].drop_duplicates()
 tabela_freq = freq_empresas_setor['Setor'].value_counts().reset_index()
 tabela_freq.columns = ['Setor', 'Quantidade de Empresas']
 print(tabela_freq)
 
-#%% Tabela frequência por Segmento
+#%% [16] Tabela frequência por Segmento
 
 freq_empresas_segmento = df[['Papel', 'Segmento']].drop_duplicates()
 tabela_freq = freq_empresas_segmento['Segmento'].value_counts().reset_index()
@@ -287,25 +288,9 @@ tabela_freq.columns = ['Setor', 'Quantidade de Empresas']
 print(tabela_freq)
 
 
-#%% Estatísticas Descritivas
-
-# colunas = [
-#     'Valordemercado_mi', 'PL', 'PVP', 'PEBIT', 'PSR', 'PAtivos', 'PCapGiro',
-#     'PAtivCircLiq', 'DivYield', 'EVEBITDA', 'EVEBIT', 'CresRec5a',
-#     'LPA', 'VPA', 'MargBruta', 'MargEBIT', 'MargLIquida',
-#     'EBITAtivo', 'ROIC', 'ROE', 'Liquidez Corr', 'DivBrPatrim', 'GiroAtivos'
-# ]
+#%% [17] Estatísticas Descritivas
 
 colunas_float = df.select_dtypes(include='float').columns.tolist()
-
-#colunas = [
-#    'PL', 'PSR', 'PVP', 'MargLiq', 'MargBrut', 'MargEBIT','MargEBITDA', 'EVEBITDA',
-#    'EVEBIT', 'PEBITDA', 'PEBIT', 'PAtivo','PCapGiro', 'PAtCircLiq', 'VPA', 'LPA',
-#    'GiroAtivos', 'ROE', 'ROIC', 'ROA', 'DivLiqEBITDA', 'DivLiqEBIT', 'PatrAtiv',
-#    'PassAtiv', 'LiqCorr','ValorMercado', 'ValorFirma', 'PatrLiq', 'TotPapeis',
-#    'Ativos', 'AtivCirc', 'DivLiq', 'Disponibilidade', 'FreeFloat', 'TagAlong',
-#    'LiqMedDia'
-#]
 
 estatisticas = df[colunas_float].describe().T
 estatisticas['Mediana'] = df[colunas_float].median()
@@ -315,7 +300,7 @@ estatisticas = estatisticas.round(2)
 
 print(estatisticas)
 
-# In[4.8]: Transformação de Box-Cox
+#%% [18] Transformação de Box-Cox
 
 # Para o cálculo do lambda de Box-Cox
 from scipy.stats import boxcox
@@ -331,7 +316,7 @@ df
 print ("lambda de Box-Cox: ", lmbda)
 
 
-#%% Box Plot do Valor de Mercado
+#%% [19] Box Plot do Valor de Mercado
 
 plt.figure(figsize=(8, 5))
 sns.boxplot(y=df['ValorMercado_bi'], color='skyblue')
@@ -341,7 +326,7 @@ plt.grid(True, axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()
 
-#%% Box Plot do Valor de Mercado após transformação de Box Cox
+#%% [20] Box Plot do Valor de Mercado após transformação de Box Cox
 
 plt.figure(figsize=(7, 5))
 sns.boxplot(y=df['ValorMercado_bc'], color='skyblue')
@@ -352,7 +337,7 @@ plt.tight_layout()
 plt.show()
 
 
-#%% Valor de Mercado Gráfico
+#%% [21] Valor de Mercado Gráfico
 
 df_ordenado = df.sort_values("ValorMercado_bi", ascending=True)
 
@@ -366,12 +351,32 @@ plt.title("Valores de Mercado das Companhias")
 plt.tight_layout()
 plt.show()
 
-#%% Valor de mercado médio por setor
+#%% [22] Valor de Mercado Gráfico Vertical
+
+top_n = 80
+df_ordenado = df.sort_values("ValorMercado_bi", ascending=False).head(top_n).sort_values("ValorMercado_bi", ascending=True)
+
+plt.figure(figsize=(6,8))
+plt.barh(df_ordenado["Papel"], df_ordenado["ValorMercado_bi"])
+
+plt.xticks(fontsize=8)
+plt.yticks(fontsize=5)
+plt.xlabel("Valor de mercado (bi)", fontsize=10)
+plt.ylabel("Companhias", fontsize=10)
+plt.title(f"Valor de mercado ({top_n} maiores companhias) estudadas", fontsize=11)
+plt.margins(x=0.01, y=0.01)
+#plt.grid(axis='x', linestyle='--', alpha=0.5)
+plt.tight_layout()
+plt.show()
+
+
+
+#%% [23] Valor de mercado médio por setor
 
 valordemercado_medio = df.groupby('Setor')['ValorMercado_bi'].mean().reset_index()
 valordemercado_medio
 
-#%% Valor de mercado médio por setor
+#%% [24] Valor de mercado médio por setor
 
 valordemercado_medio = df.groupby('Setor')['ValorMercado_bi'].mean().round(2).reset_index()
 valordemercado_medio
@@ -398,7 +403,7 @@ plt.plot(valordemercado_medio['Setor'], valordemercado_medio['ValorMercado_bi'],
 plt.scatter(df['Setor'], df['ValorMercado_bi'],
             alpha=0.5, color='orange', s = 150)
 plt.xlabel('Setor $j$ (nível 2)', fontsize=20)
-plt.ylabel('Valor de mercado (bi)', fontsize=20)
+plt.ylabel('Valor de mercado (bilhões de reais)', fontsize=20)
 plt.xticks(valordemercado_medio['Setor'], labels_quebrados, fontsize=17, rotation=60)
 plt.yticks(fontsize=17)
 
@@ -414,7 +419,7 @@ plt.legend(handles=legend_elements, fontsize=15, loc='upper left')
 plt.show()
 
 
-#%% Valor de mercado médio por setor (Transformada por Box-Cox)
+#%% [25] Valor de mercado médio por setor (Transformada por Box-Cox)
 
 valordemercado_medio = df.groupby('Setor')['ValorMercado_bc'].mean().round(2).reset_index()
 valordemercado_medio
@@ -457,7 +462,7 @@ plt.legend(handles=legend_elements, fontsize=15, loc='upper left')
 plt.show()
 
 
-# In[1.5]: Kernel density estimation (KDE) - função densidade de probabilidade
+#%% [26] Kernel density estimation (KDE) - função densidade de probabilidade
 #da variável dependente ('ValorMercado_bi'), com histograma
 
 plt.figure(figsize=(15,10))
@@ -469,7 +474,7 @@ plt.tick_params(axis='y', labelsize=17)
 plt.tick_params(axis='x', labelsize=17)
 plt.show()
 
-# In[1.5]: Kernel density estimation (KDE) - função densidade de probabilidade
+#%% [27]: Kernel density estimation (KDE) - função densidade de probabilidade
 #da variável dependente transformada ('ValorMercado_bc'), com histograma
 
 plt.figure(figsize=(15,10))
@@ -481,7 +486,7 @@ plt.tick_params(axis='y', labelsize=17)
 plt.tick_params(axis='x', labelsize=17)
 plt.show()
 
-# In[1.6]: Boxplot da variável dependente ('valor de mercado') por setor
+#%% [28] Boxplot da variável dependente ('valor de mercado') por setor
 
 def quebra_proxima_do_meio(texto):
     palavras = texto.split()
@@ -506,7 +511,7 @@ plt.xticks(range(len(labels_quebrados)), labels_quebrados, fontsize=17, rotation
 
 plt.show()
 
-# In[1.6]: Boxplot da variável dependente ('valor de mercado') por setor
+#%% [29] Boxplot da variável dependente ('valor de mercado') por setor
 # após transformação de Box-Cox
 
 def quebra_proxima_do_meio(texto):
@@ -532,7 +537,7 @@ plt.xticks(range(len(labels_quebrados)), labels_quebrados, fontsize=17, rotation
 
 plt.show()
 
-# In[1.8]: Kernel density estimation (KDE) - função densidade de probabilidade
+#%% [30] Kernel density estimation (KDE) - função densidade de probabilidade
 #da variável dependente ('desempenho'), com histograma e por escola separadamente
 #(função 'GridSpec' do pacote 'matplotlib.gridspec')
 
@@ -571,7 +576,7 @@ plt.tight_layout()
 plt.show()
 
 
-# In[1.8]: Kernel density estimation (KDE) - função densidade de probabilidade
+#%% [31] Kernel density estimation (KDE) - função densidade de probabilidade
 #da variável dependente ('Valor de Mercado'), com histograma e por setor separadamente
 #(função 'GridSpec' do pacote 'matplotlib.gridspec')
 # Transformada por Box-Cox
@@ -614,7 +619,7 @@ plt.tight_layout()
 plt.show()
 
 
-#%%
+#%% [32]
 
 df.columns
 
@@ -648,7 +653,7 @@ plt.show()
 
 df.columns
 
-#%% FÓRMULA PRO MODELO
+#%% [33] FÓRMULA PRO MODELO
 
 df.columns
 
@@ -664,14 +669,14 @@ formula_modelo = ' + '.join(lista_colunas)
 print(formula_modelo)
 
 
-# In[2.39]: Estimação do 'modelo_ols'
+# In[34]: Estimação do 'modelo_ols'
 
 modelo_ols = sm.OLS.from_formula("ValorMercado_bi ~ " + formula_modelo, df).fit()
 
 # Parâmetros do 'modelo_ols_dummies'
 modelo_ols.summary()
 
-#%% Procedimento Stepwise
+#%% [35] Procedimento Stepwise
 
 from statstests.process import stepwise
 
@@ -681,7 +686,7 @@ modelo_ols_step = stepwise(modelo_ols, pvalue_limit=0.05)
 
 modelo_ols_step.summary()
 
-# In[4.6]: Teste de verificação da aderência dos resíduos à normalidade
+# In[36]: Teste de verificação da aderência dos resíduos à normalidade
 
 # Teste de Shapiro-Wilk (n < 30)
 # from scipy.stats import shapiro
@@ -706,7 +711,7 @@ else:
 	print('Rejeita-se H0 - Distribuição não aderente à normalidade')
 
 
-# In[4.7]: Histograma dos resíduos do modelo OLS linear
+# In[37]: Histograma dos resíduos do modelo OLS linear
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -723,7 +728,7 @@ plt.yticks(fontsize=17)
 plt.show()
 
 
-# In[4.9]: Estimando um novo modelo OLS com variável dependente
+# In[38]: Estimando um novo modelo OLS com variável dependente
 #transformada por Box-Cox
 
 modelo_bc = sm.OLS.from_formula("ValorMercado_bc ~ " + formula_modelo, df).fit()
@@ -731,13 +736,13 @@ modelo_bc = sm.OLS.from_formula("ValorMercado_bc ~ " + formula_modelo, df).fit()
 # Parâmetros do 'modelo_bc'
 modelo_bc.summary()
 
-#%% Modelo BC Step
+#%% [39] Modelo BC Step
 
 modelo_bc_step = stepwise(modelo_bc, pvalue_limit=0.05)
 
 modelo_bc_step.summary()
 
-#%% Teste de Shapiro-Francia:
+#%% [40] Teste de Shapiro-Francia:
     
 from statstests.tests import shapiro_francia
 
@@ -752,7 +757,7 @@ else:
 	print('Rejeita-se H0 - Distribuição não aderente à normalidade')
     
     
-# In[4.7]: Histograma dos resíduos do modelo OLS linear
+# In[41]: Histograma dos resíduos do modelo OLS linear
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -769,7 +774,7 @@ plt.yticks(fontsize=17)
 plt.show()
 
 
-#%%
+#%% [42]
 
 df['yhat_modelo_bc'] = (modelo_bc_step.fittedvalues * lmbda + 1) ** (1 / lmbda)
 df
@@ -777,7 +782,7 @@ df
 df_filtrado = df[["ValorMercado_bi", "yhat_modelo_bc"]]
 
 
-# In[1.39]: Gráfico para a comparação dos fitted values do modelo OLS
+# In[43]: Gráfico para a comparação dos fitted values do modelo OLS
 
 df['fitted_OLS'] = modelo_ols_step.fittedvalues
 df_fitted = df[['ValorMercado_bi','fitted_OLS']]
@@ -808,7 +813,7 @@ plt.yticks(fontsize=17)
 plt.legend(fontsize=20)
 plt.show()
 
-#%% MULTINIVEL
+#%% [44] MULTINIVEL
 # Modelo Nulo HLM2
 
 modelo_nulo_hlm2 = sm.MixedLM.from_formula(formula='ValorMercado_bc ~ 1',
@@ -818,7 +823,7 @@ modelo_nulo_hlm2 = sm.MixedLM.from_formula(formula='ValorMercado_bc ~ 1',
 
 modelo_nulo_hlm2.summary()
 
-#%%
+#%% [45]
 #ICC Modelo Nulo:
 # Coeficiente de Setor Var / (Coeficiente de Setor Var + Scale)
 
